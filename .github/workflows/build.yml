@@ -21,34 +21,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout
         uses: actions/checkout@v4
 
 
-      # Login GCP bằng Workload Identity Federation
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
 
 
       - name: Configure Docker
         run: |
-          gcloud auth configure-docker \
-          ${{ env.REGION }}-docker.pkg.dev
+          gcloud auth configure-docker asia-southeast1-docker.pkg.dev --quiet
 
 
-      # Build Docker image
       - name: Build image
         run: |
           docker build \
-          -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+          -t asia-southeast1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
           .
 
 
-      # Push lên Artifact Registry
       - name: Push image
         run: |
           docker push \
-          ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          asia-southeast1-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
