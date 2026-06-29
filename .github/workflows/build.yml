@@ -1,0 +1,54 @@
+name: Build AI Services
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: sky-500813
+  REGION: asia-southeast1
+  GAR_LOCATION: asia-southeast1
+  REPOSITORY: enterprise-ai-copilot
+  IMAGE_NAME: ai-services
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+
+      # Login GCP bằng Workload Identity Federation
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+
+      - name: Configure Docker
+        run: |
+          gcloud auth configure-docker \
+          ${{ env.REGION }}-docker.pkg.dev
+
+
+      # Build Docker image
+      - name: Build image
+        run: |
+          docker build \
+          -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+          .
+
+
+      # Push lên Artifact Registry
+      - name: Push image
+        run: |
+          docker push \
+          ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
